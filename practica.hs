@@ -7,7 +7,7 @@ data VariableName = "X"|..|"Z"
 type Variable     = ( VariableName , Int )
 type ProgramState = [Variable]
 
-data arithmetic_expression = N Int | V Variable | left_side_expression :+ left_side_expression | left_side_expression :- left_side_expression | left_side_expression :/ left_side_expression 
+data arithmetic_expression = N Int | V Variable | left_side_expression :+ arithmetic_expression | arithmetic_expression :- arithmetic_expression | arithmetic_expression :/ arithmetic_expression 
 data AssigmentInstruction = Variable := left_side_expression
 
 data Instruction = AssigmentInstruction
@@ -28,7 +28,20 @@ read_variable state (n,v) = (\(x,y) -> y) (last filter (\(x,y) -> n = x) state)
 -----------------------------------
 
 -- Arithmetic expression evaluation
-evaluate_arithmetic_expression:: arithmetic_expression -> Int
+evaluate_arithmetic_expression:: ProgramState -> arithmetic_expression -> Int
+evaluate_arithmetic_expression state (N Int)          = N
+evaluate_arithmetic_expression state (V VariableName) = read_variable state V
+evaluate_arithmetic_expression (lhs :+ rhs)           = (evaluate_arithmetic_expression state lhs) + (evaluate_arithmetic_expression rhs)
+evaluate_arithmetic_expression (lhs :- rhs)           = (evaluate_arithmetic_expression state lhs) - (evaluate_arithmetic_expression rhs)
+evaluate_arithmetic_expression (lhs :* rhs)           = (evaluate_arithmetic_expression state lhs) * (evaluate_arithmetic_expression rhs)
+evaluate_arithmetic_expression (lhs :/ rhs)           = (evaluate_arithmetic_expression state lhs) / (evaluate_arithmetic_expression rhs)
+
+-- Boolean expression evaluation
+evaluate_boolean_expression:: ProgramState -> boolean_expression  -> Bool
+evaluate_boolean_expression state (B Bool)     = B
+evaluate_boolean_expression state (V Variable) = read_variable state V
+evaluate_boolean_expression state (lhs :&& rhs) = (evaluate_boolean_expression state lhs) && (evaluate_arithmetic_expression rhs)
+evaluate_boolean_expression state (lhs :|| rhs) = (evaluate_boolean_expression state lhs) || (evaluate_arithmetic_expression rhs)
 
 
 -- Instruction execution functions:
